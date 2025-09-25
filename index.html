@@ -1,0 +1,931 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบลงตารางเวรเภสัชกร</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            font-family: 'Sarabun', sans-serif !important;
+        }
+        body {
+            font-family: 'Sarabun', sans-serif;
+            background-color: #f0f9ff;
+            box-sizing: border-box;
+        }
+        .dashboard-card {
+            transition: all 0.3s ease;
+        }
+        .dashboard-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .main-button {
+            transition: all 0.3s ease;
+        }
+        .main-button:hover {
+            transform: translateY(-2px);
+        }
+        .fade-in {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        .slide-in {
+            animation: slideIn 0.5s ease-in-out;
+        }
+        @keyframes slideIn {
+            from { transform: translateY(-20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        .slide-up {
+            animation: slideUp 0.3s ease-out;
+        }
+        @keyframes slideUp {
+            from { transform: translateY(10px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        .loading {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3498db;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .loader {
+            border-top-color: #3498db;
+            -webkit-animation: spinner 1.5s linear infinite;
+            animation: spinner 1.5s linear infinite;
+        }
+        @-webkit-keyframes spinner {
+            0% { -webkit-transform: rotate(0deg); }
+            100% { -webkit-transform: rotate(360deg); }
+        }
+        @keyframes spinner {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        table {
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+        th, td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        tbody tr:hover {
+            background-color: #f1f5f9;
+        }
+        .schedule-row {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            padding: 16px;
+            transition: all 0.3s ease;
+        }
+        .schedule-row:hover {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen font-thai">
+    <!-- Login Page -->
+    <div id="loginPage" class="min-h-screen flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md fade-in">
+            <div class="text-center mb-8">
+                <div class="bg-blue-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg class="w-10 h-10 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+                <h1 class="text-2xl font-bold text-gray-800 mb-2">ระบบลงตารางเวรเภสัชกร</h1>
+                <p class="text-gray-600">กรุณาเข้าสู่ระบบเพื่อดำเนินการต่อ</p>
+            </div>
+            
+            <form id="loginForm" class="space-y-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">รหัสผู้ใช้</label>
+                    <input type="text" id="username" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all" placeholder="กรอกรหัสผู้ใช้" required>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">รหัสผ่าน</label>
+                    <input type="password" id="password" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all" placeholder="กรอกรหัสผ่าน" required>
+                </div>
+                
+                <button type="submit" id="loginBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg transition-colors flex items-center justify-center">
+                    <span id="loginText">เข้าสู่ระบบ</span>
+                    <div id="loginLoading" class="loading ml-2 hidden"></div>
+                </button>
+            </form>
+            
+            <div id="loginMessage" class="mt-4 text-center text-sm hidden"></div>
+        </div>
+    </div>
+
+    <!-- Main Application -->
+    <div id="mainApp" class="hidden min-h-screen">
+        <!-- Header -->
+        <header class="bg-white shadow-lg border-b-4 border-blue-500">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between items-center py-6">
+                    <div class="flex items-center">
+                        <div class="bg-blue-100 w-12 h-12 rounded-full flex items-center justify-center mr-4">
+                            <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                        </div>
+                        <div>
+                            <h1 class="text-2xl font-bold text-gray-900">ระบบลงตารางเวรเภสัชกร</h1>
+                            <p class="text-gray-600">จัดการตารางเวรและข้อมูลเภสัชกร</p>
+                        </div>
+                    </div>
+                    <button id="logoutBtn" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition-colors">
+                        ออกจากระบบ
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Navigation Tabs -->
+        <div class="bg-white shadow-sm">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <nav class="flex space-x-8">
+                    <button class="tab-btn active py-4 px-1 border-b-2 border-blue-500 font-medium text-sm text-blue-600" data-tab="schedule">
+                        ลงตารางเวร
+                    </button>
+                    <button class="tab-btn py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300" data-tab="manage">
+                        จัดการข้อมูล
+                    </button>
+                    <button class="tab-btn py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300" data-tab="report">
+                        ดึงรายงาน
+                    </button>
+                </nav>
+            </div>
+        </div>
+
+        <!-- Schedule Tab -->
+        <div id="scheduleTab" class="tab-content max-w-6xl mx-auto p-6">
+            <div class="bg-white rounded-2xl shadow-xl p-8 fade-in dashboard-card">
+                <h2 class="text-2xl font-bold text-gray-800 mb-6 flex items-center">
+                    <svg class="w-6 h-6 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                    </svg>
+                    ลงตารางเวรเภสัชกร
+                </h2>
+                
+                <div class="mb-6">
+                    <div class="grid md:grid-cols-2 gap-6 mb-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">เลือกเภสัชกร</label>
+                            <select id="pharmacistSelect" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" required>
+                                <option value="">-- เลือกเภสัชกร --</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <button type="button" id="addScheduleRowBtn" class="mt-6 bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-lg transition-colors main-button flex items-center">
+                                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                                </svg>
+                                เพิ่มแถวตารางเวร
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <form id="scheduleForm" class="space-y-6">
+                    <div id="scheduleRows" class="space-y-4">
+                        <!-- Schedule rows will be added here -->
+                    </div>
+                    
+                    <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-3 px-6 rounded-lg transition-colors main-button flex items-center justify-center">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                        <span id="scheduleSubmitText">บันทึกตารางเวรทั้งหมด</span>
+                        <div id="scheduleLoading" class="loading ml-2 hidden"></div>
+                    </button>
+                </form>
+                
+                <div id="scheduleMessage" class="mt-4 text-center hidden"></div>
+            </div>
+        </div>
+
+        <!-- Report Tab -->
+        <div id="reportTab" class="tab-content hidden max-w-6xl mx-auto p-6">
+            <div class="bg-white rounded-2xl shadow-xl p-8 fade-in dashboard-card">
+                <h2 class="text-2xl font-bold text-gray-800 mb-6 flex items-center">
+                    <svg class="w-6 h-6 mr-2 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                    ดึงรายงานตารางเวร
+                </h2>
+                
+                <div class="grid md:grid-cols-2 gap-6 mb-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">วันที่เริ่มต้น</label>
+                        <input type="date" id="reportStartDate" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">วันที่สิ้นสุด</label>
+                        <input type="date" id="reportEndDate" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                    </div>
+                </div>
+                
+                <div class="flex gap-4 mb-6">
+                    <button id="generateReportBtn" class="bg-purple-600 hover:bg-purple-700 text-white font-medium py-3 px-6 rounded-lg transition-colors main-button flex items-center">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                        <span id="reportBtnText">สร้างรายงาน</span>
+                        <div id="reportLoading" class="loading ml-2 hidden"></div>
+                    </button>
+                    
+                    <button id="exportReportBtn" class="bg-green-600 hover:bg-green-700 text-white font-medium py-3 px-6 rounded-lg transition-colors main-button flex items-center" disabled>
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                        ส่งออก Excel
+                    </button>
+                </div>
+                
+                <div id="reportResults" class="hidden">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">ผลลัพธ์รายงาน</h3>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full bg-white border border-gray-200 rounded-lg">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ลำดับ</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ชื่อ-นามสกุล</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ชื่อเวร</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">วันที่อยู่เวร</th>
+                                </tr>
+                            </thead>
+                            <tbody id="reportTableBody" class="bg-white divide-y divide-gray-200">
+                                <!-- Report data will be populated here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <div id="reportMessage" class="mt-4 text-center hidden"></div>
+            </div>
+        </div>
+
+        <!-- Management Tab -->
+        <div id="manageTab" class="tab-content hidden max-w-6xl mx-auto p-6">
+            <div class="grid lg:grid-cols-2 gap-8">
+                <!-- Add Pharmacist -->
+                <div class="bg-white rounded-2xl shadow-xl p-8 fade-in dashboard-card">
+                    <h3 class="text-xl font-bold text-gray-800 mb-6 flex items-center">
+                        <svg class="w-5 h-5 mr-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                        </svg>
+                        เพิ่มเภสัชกรใหม่
+                    </h3>
+                    
+                    <form id="pharmacistForm" class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">ชื่อ-นามสกุล</label>
+                            <input type="text" id="pharmacistName" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent" placeholder="กรอกชื่อ-นามสกุลเภสัชกร" required>
+                        </div>
+                        
+                        <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-3 px-4 rounded-lg transition-colors main-button flex items-center justify-center">
+                            <span id="pharmacistSubmitText">เพิ่มเภสัชกร</span>
+                            <div id="pharmacistLoading" class="loading ml-2 hidden"></div>
+                        </button>
+                    </form>
+                    
+                    <div id="pharmacistMessage" class="mt-4 text-center text-sm hidden"></div>
+                </div>
+
+                <!-- Add Shift -->
+                <div class="bg-white rounded-2xl shadow-xl p-8 fade-in dashboard-card">
+                    <h3 class="text-xl font-bold text-gray-800 mb-6 flex items-center">
+                        <svg class="w-5 h-5 mr-2 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                        </svg>
+                        เพิ่มเวรใหม่
+                    </h3>
+                    
+                    <form id="shiftForm" class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">ชื่อเวร</label>
+                            <input type="text" id="shiftName" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent" placeholder="กรอกชื่อเวร เช่น เวรเช้า, เวรบ่าย" required>
+                        </div>
+                        
+                        <button type="submit" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-medium py-3 px-4 rounded-lg transition-colors main-button flex items-center justify-center">
+                            <span id="shiftSubmitText">เพิ่มเวร</span>
+                            <div id="shiftLoading" class="loading ml-2 hidden"></div>
+                        </button>
+                    </form>
+                    
+                    <div id="shiftMessage" class="mt-4 text-center text-sm hidden"></div>
+                </div>
+            </div>
+
+            <!-- Current Data Display -->
+            <div class="mt-8 grid lg:grid-cols-2 gap-8">
+                <!-- Pharmacists List -->
+                <div class="bg-white rounded-2xl shadow-xl p-8 dashboard-card">
+                    <h3 class="text-xl font-bold text-gray-800 mb-6 flex items-center">
+                        <svg class="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                        </svg>
+                        รายชื่อเภสัชกร
+                    </h3>
+                    <div id="pharmacistsList" class="space-y-2 max-h-60 overflow-y-auto">
+                        <!-- Pharmacists will be listed here -->
+                    </div>
+                </div>
+
+                <!-- Shifts List -->
+                <div class="bg-white rounded-2xl shadow-xl p-8 dashboard-card">
+                    <h3 class="text-xl font-bold text-gray-800 mb-6 flex items-center">
+                        <svg class="w-5 h-5 mr-2 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        รายการเวร
+                    </h3>
+                    <div id="shiftsList" class="space-y-2 max-h-60 overflow-y-auto">
+                        <!-- Shifts will be listed here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuration - Replace with your actual values
+        const CONFIG = {
+            SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbyqHCzAVFWxgiu6YQIz384ljesFuJznsLuBjoPYOjbvEWylPL1F7Mag4SADSJIuvIk5/exec', // แทนที่ด้วย URL ของ Google Apps Script
+            SHEET_ID: '18YJuXj22K0mRwQCUAgULCtDXrkmsPKKxrNUM2xgSDvY' // แทนที่ด้วย ID ของ Google Sheet
+        };
+
+        // Global variables
+        let pharmacists = [];
+        let shifts = [];
+        let scheduleRowCounter = 0;
+        let reportData = [];
+
+        // DOM Elements
+        const loginPage = document.getElementById('loginPage');
+        const mainApp = document.getElementById('mainApp');
+        const loginForm = document.getElementById('loginForm');
+        const loginMessage = document.getElementById('loginMessage');
+        const loginBtn = document.getElementById('loginBtn');
+        const loginText = document.getElementById('loginText');
+        const loginLoading = document.getElementById('loginLoading');
+
+        // Tab functionality
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const tabName = btn.dataset.tab;
+                switchTab(tabName);
+            });
+        });
+
+        function switchTab(tabName) {
+            // Update tab buttons
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active', 'border-blue-500', 'text-blue-600');
+                btn.classList.add('border-transparent', 'text-gray-500');
+            });
+            
+            document.querySelector(`[data-tab="${tabName}"]`).classList.add('active', 'border-blue-500', 'text-blue-600');
+            document.querySelector(`[data-tab="${tabName}"]`).classList.remove('border-transparent', 'text-gray-500');
+
+            // Update tab content
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.add('hidden');
+            });
+            
+            document.getElementById(`${tabName}Tab`).classList.remove('hidden');
+        }
+
+        // Login functionality
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            // Show loading
+            loginText.textContent = 'กำลังตรวจสอบ...';
+            loginLoading.classList.remove('hidden');
+            loginBtn.disabled = true;
+            
+            // Simulate login delay
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            if (username === 'admin' && password === '123') {
+                showMessage(loginMessage, 'รหัสผ่านถูกต้อง กำลังเข้าสู่ระบบ...', 'success');
+                
+                setTimeout(() => {
+                    loginPage.classList.add('hidden');
+                    mainApp.classList.remove('hidden');
+                    loadInitialData();
+                }, 1000);
+            } else {
+                showMessage(loginMessage, 'รหัสผู้ใช้หรือรหัสผ่านไม่ถูกต้อง', 'error');
+                loginText.textContent = 'เข้าสู่ระบบ';
+                loginLoading.classList.add('hidden');
+                loginBtn.disabled = false;
+            }
+        });
+
+        // Logout functionality
+        document.getElementById('logoutBtn').addEventListener('click', () => {
+            mainApp.classList.add('hidden');
+            loginPage.classList.remove('hidden');
+            document.getElementById('loginForm').reset();
+            loginMessage.classList.add('hidden');
+        });
+
+        // Load initial data
+        async function loadInitialData() {
+            try {
+                await Promise.all([
+                    loadPharmacists(),
+                    loadShifts()
+                ]);
+                updateUI();
+                addScheduleRow(); // Add initial schedule row
+            } catch (error) {
+                console.error('Error loading initial data:', error);
+            }
+        }
+
+        // Add schedule row functionality
+        document.getElementById('addScheduleRowBtn').addEventListener('click', addScheduleRow);
+
+        function addScheduleRow() {
+            scheduleRowCounter++;
+            const container = document.getElementById('scheduleRows');
+            
+            const rowDiv = document.createElement('div');
+            rowDiv.className = 'schedule-row slide-in';
+            rowDiv.id = `scheduleRow_${scheduleRowCounter}`;
+            
+            rowDiv.innerHTML = `
+                <div class="flex justify-between items-center mb-4">
+                    <h4 class="text-lg font-semibold text-gray-800">ตารางเวรที่ ${scheduleRowCounter}</h4>
+                    ${scheduleRowCounter > 1 ? `<button type="button" onclick="removeScheduleRow(${scheduleRowCounter})" class="text-red-500 hover:text-red-700 transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                        </svg>
+                    </button>` : ''}
+                </div>
+                
+                <div class="grid md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">วันที่อยู่เวร</label>
+                        <input type="date" name="workDate" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" required>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">เลือกเวร</label>
+                        <select name="shift" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" required>
+                            <option value="">-- เลือกเวร --</option>
+                        </select>
+                    </div>
+                </div>
+            `;
+            
+            container.appendChild(rowDiv);
+            updateShiftSelects();
+        }
+
+        function removeScheduleRow(rowId) {
+            const row = document.getElementById(`scheduleRow_${rowId}`);
+            if (row) {
+                row.remove();
+            }
+        }
+
+        function updateShiftSelects() {
+            const selects = document.querySelectorAll('select[name="shift"]');
+            selects.forEach(select => {
+                const currentValue = select.value;
+                select.innerHTML = '<option value="">-- เลือกเวร --</option>';
+                
+                shifts.forEach(shift => {
+                    const option = document.createElement('option');
+                    option.value = shift;
+                    option.textContent = shift;
+                    if (shift === currentValue) {
+                        option.selected = true;
+                    }
+                    select.appendChild(option);
+                });
+            });
+        }
+
+        // Load pharmacists from Google Sheets
+        async function loadPharmacists() {
+            try {
+                const response = await fetch(`${CONFIG.SCRIPT_URL}?action=getPharmacists`);
+                const data = await response.json();
+                pharmacists = data.pharmacists || [];
+            } catch (error) {
+                console.error('Error loading pharmacists:', error);
+                pharmacists = ['ตัวอย่าง: ดร.สมชาย ใจดี', 'ตัวอย่าง: ดร.สมหญิง รักษ์ดี']; // Fallback data
+            }
+        }
+
+        // Load shifts from Google Sheets
+        async function loadShifts() {
+            try {
+                const response = await fetch(`${CONFIG.SCRIPT_URL}?action=getShifts`);
+                const data = await response.json();
+                shifts = data.shifts || [];
+            } catch (error) {
+                console.error('Error loading shifts:', error);
+                shifts = ['เวรเช้า', 'เวรบ่าย', 'เวรดึก', 'เวรฉุกเฉิน']; // Fallback data
+            }
+        }
+
+        // Update UI with loaded data
+        function updateUI() {
+            updatePharmacistSelect();
+            updateShiftSelects();
+            updatePharmacistsList();
+            updateShiftsList();
+        }
+
+        // Update pharmacist select dropdown
+        function updatePharmacistSelect() {
+            const select = document.getElementById('pharmacistSelect');
+            select.innerHTML = '<option value="">-- เลือกเภสัชกร --</option>';
+            
+            pharmacists.forEach(pharmacist => {
+                const option = document.createElement('option');
+                option.value = pharmacist;
+                option.textContent = pharmacist;
+                select.appendChild(option);
+            });
+        }
+
+        // Update pharmacists list display
+        function updatePharmacistsList() {
+            const container = document.getElementById('pharmacistsList');
+            container.innerHTML = '';
+            
+            if (pharmacists.length === 0) {
+                container.innerHTML = '<p class="text-gray-500 text-center py-4">ยังไม่มีข้อมูลเภสัชกร</p>';
+                return;
+            }
+            
+            pharmacists.forEach((pharmacist, index) => {
+                const div = document.createElement('div');
+                div.className = 'flex items-center justify-between p-3 bg-gray-50 rounded-lg';
+                div.innerHTML = `
+                    <span class="text-gray-800">${index + 1}. ${pharmacist}</span>
+                    <span class="text-xs text-gray-500">เภสัชกร</span>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        // Update shifts list display
+        function updateShiftsList() {
+            const container = document.getElementById('shiftsList');
+            container.innerHTML = '';
+            
+            if (shifts.length === 0) {
+                container.innerHTML = '<p class="text-gray-500 text-center py-4">ยังไม่มีข้อมูลเวร</p>';
+                return;
+            }
+            
+            shifts.forEach((shift, index) => {
+                const div = document.createElement('div');
+                div.className = 'flex items-center justify-between p-3 bg-gray-50 rounded-lg';
+                div.innerHTML = `
+                    <span class="text-gray-800">${index + 1}. ${shift}</span>
+                    <span class="text-xs text-gray-500">เวรงาน</span>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        // Schedule form submission
+        document.getElementById('scheduleForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const pharmacist = document.getElementById('pharmacistSelect').value;
+            const scheduleRows = document.querySelectorAll('.schedule-row');
+            
+            if (!pharmacist) {
+                showMessage(document.getElementById('scheduleMessage'), 'กรุณาเลือกเภสัชกร', 'error');
+                return;
+            }
+            
+            if (scheduleRows.length === 0) {
+                showMessage(document.getElementById('scheduleMessage'), 'กรุณาเพิ่มตารางเวรอย่างน้อย 1 แถว', 'error');
+                return;
+            }
+            
+            // Validate all rows
+            const scheduleData = [];
+            let hasError = false;
+            
+            scheduleRows.forEach((row, index) => {
+                const workDate = row.querySelector('input[name="workDate"]').value;
+                const shift = row.querySelector('select[name="shift"]').value;
+                
+                if (!workDate || !shift) {
+                    showMessage(document.getElementById('scheduleMessage'), `กรุณากรอกข้อมูลให้ครบถ้วนในแถวที่ ${index + 1}`, 'error');
+                    hasError = true;
+                    return;
+                }
+                
+                scheduleData.push({ workDate, shift });
+            });
+            
+            if (hasError) return;
+            
+            // Show loading
+            const submitText = document.getElementById('scheduleSubmitText');
+            const loading = document.getElementById('scheduleLoading');
+            submitText.textContent = 'กำลังบันทึก...';
+            loading.classList.remove('hidden');
+            
+            try {
+                let totalEntries = 0;
+                
+                // Process each schedule row
+                for (const schedule of scheduleData) {
+                    const response = await fetch(CONFIG.SCRIPT_URL, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            action: 'addSchedule',
+                            pharmacist: pharmacist,
+                            date: schedule.workDate,
+                            shift: schedule.shift
+                        })
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    
+                    totalEntries++;
+                }
+                
+                showMessage(document.getElementById('scheduleMessage'), `บันทึกตารางเวรสำเร็จ! (${totalEntries} รายการ)`, 'success');
+                
+                // Reset form
+                document.getElementById('pharmacistSelect').value = '';
+                document.getElementById('scheduleRows').innerHTML = '';
+                scheduleRowCounter = 0;
+                addScheduleRow();
+                
+            } catch (error) {
+                console.error('Error submitting schedule:', error);
+                showMessage(document.getElementById('scheduleMessage'), 'เกิดข้อผิดพลาดในการบันทึกข้อมูล', 'error');
+            } finally {
+                submitText.textContent = 'บันทึกตารางเวรทั้งหมด';
+                loading.classList.add('hidden');
+            }
+        });
+
+        // Add pharmacist form submission
+        document.getElementById('pharmacistForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const name = document.getElementById('pharmacistName').value.trim();
+            
+            if (!name) {
+                showMessage(document.getElementById('pharmacistMessage'), 'กรุณากรอกชื่อ-นามสกุล', 'error');
+                return;
+            }
+            
+            // Show loading
+            const submitText = document.getElementById('pharmacistSubmitText');
+            const loading = document.getElementById('pharmacistLoading');
+            submitText.textContent = 'กำลังเพิ่ม...';
+            loading.classList.remove('hidden');
+            
+            try {
+                const response = await fetch(CONFIG.SCRIPT_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        action: 'addPharmacist',
+                        name: name
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                
+                pharmacists.push(name);
+                updatePharmacistSelect();
+                updatePharmacistsList();
+                
+                showMessage(document.getElementById('pharmacistMessage'), 'เพิ่มเภสัชกรสำเร็จ!', 'success');
+                document.getElementById('pharmacistForm').reset();
+                
+            } catch (error) {
+                console.error('Error adding pharmacist:', error);
+                showMessage(document.getElementById('pharmacistMessage'), 'เกิดข้อผิดพลาดในการเพิ่มข้อมูล', 'error');
+            } finally {
+                submitText.textContent = 'เพิ่มเภสัชกร';
+                loading.classList.add('hidden');
+            }
+        });
+
+        // Add shift form submission
+        document.getElementById('shiftForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const name = document.getElementById('shiftName').value.trim();
+            
+            if (!name) {
+                showMessage(document.getElementById('shiftMessage'), 'กรุณากรอกชื่อเวร', 'error');
+                return;
+            }
+            
+            // Show loading
+            const submitText = document.getElementById('shiftSubmitText');
+            const loading = document.getElementById('shiftLoading');
+            submitText.textContent = 'กำลังเพิ่ม...';
+            loading.classList.remove('hidden');
+            
+            try {
+                const response = await fetch(CONFIG.SCRIPT_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        action: 'addShift',
+                        name: name
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                
+                shifts.push(name);
+                updateShiftSelects();
+                updateShiftsList();
+                
+                showMessage(document.getElementById('shiftMessage'), 'เพิ่มเวรสำเร็จ!', 'success');
+                document.getElementById('shiftForm').reset();
+                
+            } catch (error) {
+                console.error('Error adding shift:', error);
+                showMessage(document.getElementById('shiftMessage'), 'เกิดข้อผิดพลาดในการเพิ่มข้อมูล', 'error');
+            } finally {
+                submitText.textContent = 'เพิ่มเวร';
+                loading.classList.add('hidden');
+            }
+        });
+
+        // Report functionality
+        document.getElementById('generateReportBtn').addEventListener('click', async () => {
+            const startDate = document.getElementById('reportStartDate').value;
+            const endDate = document.getElementById('reportEndDate').value;
+            
+            if (!startDate || !endDate) {
+                showMessage(document.getElementById('reportMessage'), 'กรุณาเลือกช่วงวันที่', 'error');
+                return;
+            }
+            
+            if (new Date(startDate) > new Date(endDate)) {
+                showMessage(document.getElementById('reportMessage'), 'วันที่เริ่มต้นต้องไม่เกินวันที่สิ้นสุด', 'error');
+                return;
+            }
+            
+            // Show loading
+            const btnText = document.getElementById('reportBtnText');
+            const loading = document.getElementById('reportLoading');
+            btnText.textContent = 'กำลังสร้างรายงาน...';
+            loading.classList.remove('hidden');
+            
+            try {
+                const response = await fetch(`${CONFIG.SCRIPT_URL}?action=getScheduleReport&startDate=${startDate}&endDate=${endDate}`);
+                const data = await response.json();
+                
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+                
+                reportData = data.schedules || [];
+                displayReport(reportData);
+                
+                showMessage(document.getElementById('reportMessage'), `พบข้อมูล ${reportData.length} รายการ`, 'success');
+                
+            } catch (error) {
+                console.error('Error generating report:', error);
+                showMessage(document.getElementById('reportMessage'), 'เกิดข้อผิดพลาดในการสร้างรายงาน', 'error');
+            } finally {
+                btnText.textContent = 'สร้างรายงาน';
+                loading.classList.add('hidden');
+            }
+        });
+
+        function displayReport(data) {
+            const tbody = document.getElementById('reportTableBody');
+            const resultsDiv = document.getElementById('reportResults');
+            const exportBtn = document.getElementById('exportReportBtn');
+            
+            tbody.innerHTML = '';
+            
+            if (data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" class="text-center text-gray-500 py-8">ไม่พบข้อมูลในช่วงวันที่ที่เลือก</td></tr>';
+                exportBtn.disabled = true;
+                exportBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            } else {
+                data.forEach((item, index) => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${index + 1}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${item.pharmacist}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${item.shift}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${formatDateThai(item.date)}</td>
+                    `;
+                    tbody.appendChild(row);
+                });
+                
+                exportBtn.disabled = false;
+                exportBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            }
+            
+            resultsDiv.classList.remove('hidden');
+        }
+
+        // Export to Excel functionality
+        document.getElementById('exportReportBtn').addEventListener('click', () => {
+            if (reportData.length === 0) return;
+            
+            // Create CSV content
+            let csvContent = 'ลำดับ,ชื่อ-นามสกุล,ชื่อเวร,วันที่อยู่เวร\n';
+            
+            reportData.forEach((item, index) => {
+                csvContent += `${index + 1},"${item.pharmacist}","${item.shift}","${formatDateThai(item.date)}"\n`;
+            });
+            
+            // Create and download file
+            const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', `รายงานตารางเวร_${new Date().toISOString().split('T')[0]}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            showMessage(document.getElementById('reportMessage'), 'ส่งออกไฟล์สำเร็จ!', 'success');
+        });
+
+        function formatDateThai(dateString) {
+            const date = new Date(dateString);
+            const options = { 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric',
+                locale: 'th-TH'
+            };
+            return date.toLocaleDateString('th-TH', options);
+        }
+
+        // Utility function to show messages
+        function showMessage(element, message, type) {
+            element.textContent = message;
+            element.className = `mt-4 text-center text-sm ${type === 'success' ? 'text-green-600 bg-green-50' : 'text-red-600 bg-red-50'} p-3 rounded-lg slide-up`;
+            element.classList.remove('hidden');
+            
+            setTimeout(() => {
+                element.classList.add('hidden');
+            }, 5000);
+        }
+
+        // Set today's date as default for report
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('reportStartDate').value = today;
+        document.getElementById('reportEndDate').value = today;
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'984a3249257cd020',t:'MTc1ODc5OTg5OS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
